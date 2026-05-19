@@ -3,30 +3,55 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import Base, engine, get_db
 from modelebdd import Task
+import datetime #pour les champs de date et heure
 import modelebdd
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-class TaskCreate(BaseModel):
+class TaskCreate(BaseModel): #ne pas mettre la date car elle est auto générée par la base de données id aussi
     name: str
     description: str
     priority: str
     status: str
     active: bool = True
 
-    class Config:
-        orm_mode = True 
+    model_config = {
+        "from_attributes": True, #meilleur gestion du json pour la libraire pydantic avec datetime
+        "arbitrary_types_allowed": True
+    }
 
+class TaskRead(BaseModel):
+    id: int
+    created_at: datetime.datetime
+    name: str
+    description: str
+    priority: str
+    status: str
+    active: bool
 
+    model_config = {
+        "from_attributes": True,
+        "arbitrary_types_allowed": True
+    }
 
 @app.post("/task/")
 def root():
     return {"message": "BDD ok"}
-@app.post("/task")
-def create_task(task:TaskCreate, db: Session = Depends(get_db)): #créé une tache dans la bdd
-    return task
+@app.post("/task", response_model=TaskRead)
+def create_task(task: TaskCreate, db: Session = Depends(get_db)):
+    db_task = Task(
+        name=task.name,
+        description=task.description,
+        priority=task.priority,
+        status=task.status,
+        active=task.active
+    )
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task 
 @app.get("/task/{id}")
 def get_task(id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == id).first() #envoie requete a bdd pour lecture de la tache avec id correspondant
@@ -42,7 +67,7 @@ def delete_task(id: int, db: Session = Depends(get_db)):
     db.delete(task)
     db.commit()
     return task
-@app.get("/tasks", response_model=list[TaskCreate])#formater la reponse en se basant sur TaskCreate
+@app.get("/tasks", response_model=list[TaskRead])#formater la reponse en se basant sur TaskREAd
 def get_tasks(db: Session = Depends(get_db)): #lister taches
     tasks = db.query(Task).all()
     return tasks
