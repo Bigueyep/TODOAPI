@@ -1,6 +1,6 @@
 services:
   database:
-    image: "postgres:latest"
+    image: "postgres:18"
     ports:
       - 5432:5432
     restart: always
@@ -9,4 +9,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-mydatabase}
     volumes:
-      - ./db-data/:/var/lib/postgresql/data/
+      - postgresql_data:/var/lib/postgresql/data/
+
+
+volumes:
+  postgresql_data:

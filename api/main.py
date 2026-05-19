@@ -1,24 +1,14 @@
 from fastapi import FastAPI, requests, Response, responses
-#from psycopg2 import connect
 from pydantic import BaseModel
-#import dotenv
+from database import Base, engine
+from modelebdd import Task
 app = FastAPI()
 
-task = [
-    {"id": 1,
-    "title": "Task 1",
-    "description": "This is task 1",
-    "completed": False},
-    {"id": 2,
-    "title": "Task 2",
-    "description": "This is task 2",
-    "completed": False},
-    {"id": 3,
-    "title": "Task 3",
-    "description": "This is task 3",
-    "completed": False},
-]
+Base.metadata.create_all(bind=engine)
+
 @app.post("/task/")
+def root():
+    return {"message": "BDD ok"}
 def create_task():
     return task
 @app.get("/task/{id}")
