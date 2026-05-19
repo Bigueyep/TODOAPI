@@ -2,6 +2,7 @@ from fastapi import FastAPI, requests, Response, responses
 from pydantic import BaseModel
 from database import Base, engine
 from modelebdd import Task
+import modelebdd
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
