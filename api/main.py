@@ -1,4 +1,4 @@
-from fastapi import FastAPI, requests, Response, responses
+from fastapi import FastAPI, Response, responses
 from pydantic import BaseModel
 from database import Base, engine
 from modelebdd import Task
