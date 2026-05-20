@@ -2,9 +2,11 @@ from fastapi import FastAPI, Response, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import Base, engine, get_db
-from modelebdd import Task
+from modelebdd import Task, PriorityEnum, StatusEnum
+from typing import Optional
 import datetime #pour les champs de date et heure
 import modelebdd
+
 
 app = FastAPI()
 
@@ -13,8 +15,8 @@ Base.metadata.create_all(bind=engine)
 class TaskCreate(BaseModel): #ne pas mettre la date car elle est auto générée par la base de données id aussi
     name: str
     description: str
-    priority: str
-    status: str
+    priority: PriorityEnum
+    status: StatusEnum
     active: bool = True
 
     model_config = {
@@ -27,8 +29,8 @@ class TaskRead(BaseModel):
     created_at: datetime.datetime
     name: str
     description: str
-    priority: str
-    status: str
+    priority: PriorityEnum
+    status: StatusEnum
     active: bool
 
     model_config = {
@@ -68,8 +70,30 @@ def delete_task(id: int, db: Session = Depends(get_db)):
     db.commit()
     return task
 @app.get("/tasks", response_model=list[TaskRead])#formater la reponse en se basant sur TaskREAd
-def get_tasks(db: Session = Depends(get_db)): #lister taches
-    tasks = db.query(Task).all()
+def get_tasks(
+    priority: Optional[PriorityEnum] = None,
+    status: Optional[StatusEnum] = None,
+    active: Optional[bool] = None,
+    name: Optional[str] = None,
+    db: Session = Depends(get_db)
+
+): #lister taches
+    query = db.query(Task)
+
+    if priority:
+        query = query.filter(priority == PriorityEnum)
+
+    if status:
+        query = query.filter(status == StatusEnum)
+
+    if active is not None:
+        query = query.filter(active == Task.active)
+    
+    if name:
+        query = query.filter(name == Task.name)
+    
+    tasks = query.all()
+
     return tasks
 @app.put("/task/{id}")
 def update_task(id: int, task_update: TaskCreate, db: Session = Depends(get_db)): #changer la tache

@@ -8,10 +8,22 @@ class PriorityEnum(str, enum.Enum):
     medium = "medium"
     high = "high"
 
+LABELS = {
+    PriorityEnum.low == "low",
+    PriorityEnum.medium == "medium",
+    PriorityEnum.high == "high"
+}
+
 class StatusEnum(str, enum.Enum):
     pending = "pending"
     in_progress = "in_progress"
     completed = "completed"
+
+LABELS = {
+    StatusEnum.pending =="pending",
+    StatusEnum.in_progress== "in_progress",
+    StatusEnum.completed == "completed"
+}
 
 
 class Task(Base):
@@ -23,4 +35,3 @@ class Task(Base):
     priority = Column(Enum(PriorityEnum), nullable=False)
     status = Column(Enum(StatusEnum), nullable=False)
     active = Column(Boolean, default=True)
-    created_at = Column(TIMESTAMP, server_default=func.now())
