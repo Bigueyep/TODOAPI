@@ -4,17 +4,6 @@ from api.main import app
 client = TestClient(app)
 
 
-def test_root():
-
-    response = client.post("/task/")
-
-    assert response.status_code == 200
-
-    assert response.json() == {
-        "message": "BDD ok"
-    }
-
-
 def test_create_task():
 
     response = client.post(

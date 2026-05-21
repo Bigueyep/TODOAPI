@@ -8,10 +8,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER} 
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      timeout: 5s
 
     volumes:
-      - postgresql_data:/var/lib/postgresql/database
+      - postgresql_data:/var/lib/postgresql/data
 
   api:
     build: api/.
@@ -27,8 +29,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
     volumes:
       - .:/app
+
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
 volumes:
   postgresql_data:

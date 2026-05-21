@@ -25,7 +25,7 @@ class TaskCreate(BaseModel): #ne pas mettre la date car elle est auto générée
         example="pending"
     )
     active: bool = True
-    parentid: Optional[int] = None
+    parent_id: Optional[int] = None
 
     model_config = {
         "from_attributes": True, #meilleur gestion du json pour la libraire pydantic avec datetime
@@ -40,7 +40,7 @@ class TaskRead(BaseModel):
     priority: PriorityEnum
     status: StatusEnum
     active: bool
-    parentid: Optional[int] = None
+    parent_id: Optional[int] = None
 
     model_config = {
         "from_attributes": True,
@@ -58,10 +58,10 @@ def create_task(
         priority=task.priority,
         status=task.status,
         active=task.active,
-        parent_id=task.parentid
+        parent_id=task.parent_id
     )
-    if task.parentid:
-        parent_task = db.query(Task).filter(Task.id == task.parentid).first()
+    if task.parent_id:
+        parent_task = db.query(Task).filter(Task.id == task.parent_id).first()
         if not parent_task:
             raise HTTPException(status_code=404, detail="Parent task not found")
     try:
@@ -78,7 +78,6 @@ def get_task(id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == id).first() #envoie requete a bdd pour lecture de la tache avec id correspondant
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    print(task)
     return task
 @app.delete("/task/{id}")
 def delete_task(id: int, db: Session = Depends(get_db)):
@@ -94,7 +93,7 @@ def get_tasks(
     status: Optional[StatusEnum] = None,
     active: Optional[bool] = None,
     name: Optional[str] = None,
-    parentid: Optional[int] = None,
+    parent_id: Optional[int] = None,
     db: Session = Depends(get_db)
 
 ): #lister taches
@@ -112,8 +111,8 @@ def get_tasks(
     if name:
         query = query.filter(Task.name == name)
 
-    if parentid is not None:
-        query = query.filter(Task.parent_id == parentid)
+    if parent_id is not None:
+        query = query.filter(Task.parent_id == parent_id)
     
     tasks = query.all()
 
@@ -121,8 +120,8 @@ def get_tasks(
 @app.put("/task/{id}")
 def update_task(id: int, task_update: TaskCreate, db: Session = Depends(get_db)): #changer la tache
     task = db.query(Task).filter(Task.id == id).first()
-    if task_update.parentid:
-        parent_task = db.query(Task).filter(Task.id == task_update.parentid).first()
+    if task_update.parent_id:
+        parent_task = db.query(Task).filter(Task.id == task_update.parent_id).first()
         if not parent_task:
             raise HTTPException(status_code=404, detail="Parent task not found")
     if not task:
