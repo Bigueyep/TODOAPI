@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from database import Base, engine, get_db
-from modelebdd import Task, PriorityEnum, StatusEnum
+from api.database import Base, engine, get_db #ajouter api. pour eviter conflit lors du dockercompose
+from api.modelebdd import Task, PriorityEnum, StatusEnum
 from typing import Optional
 import datetime #pour les champs de date et heure
-import modelebdd
+
 from sqlalchemy.exc import IntegrityError
 
 

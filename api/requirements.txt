@@ -4,3 +4,4 @@ pydantic
 psycopg2
 sqlalchemy
 asyncpg
+uvicorn

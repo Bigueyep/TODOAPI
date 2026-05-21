@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, func, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 import enum
-from database import Base
+from api.database import Base
 
 
 class PriorityEnum(str, enum.Enum):
