@@ -3,5 +3,6 @@ dotenv
 pydantic
 psycopg2
 sqlalchemy
-asyncpg
 uvicorn
+pytest
+httpx
