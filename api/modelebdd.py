@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, func, Enum
+from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, func, Enum, ForeignKey
+from sqlalchemy.orm import relationship
 import enum
 from database import Base
 
@@ -31,7 +32,9 @@ class Task(Base):
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
     name = Column(String(100), nullable=False)
-    description = Column(String(255), unique=True, nullable=False)
+    description = Column(String(255), nullable=False)
     priority = Column(Enum(PriorityEnum), nullable=False)
     status = Column(Enum(StatusEnum), nullable=False)
     active = Column(Boolean, default=True)
+    parent_id = Column(Integer, ForeignKey("task.id"), nullable=True)
+    subtasks = relationship("Task", backref="parent", remote_side=[id])

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response, Depends
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from database import Base, engine, get_db
 from modelebdd import Task, PriorityEnum, StatusEnum
 from typing import Optional
@@ -15,9 +15,16 @@ Base.metadata.create_all(bind=engine)
 class TaskCreate(BaseModel): #ne pas mettre la date car elle est auto générée par la base de données id aussi
     name: str
     description: str
-    priority: PriorityEnum
-    status: StatusEnum
+    priority: PriorityEnum = Field(
+        description= "priorité de la tâche",
+        example="low"
+    )
+    status: StatusEnum = Field(
+        description= "status",
+        example="pending"
+    )
     active: bool = True
+    parentid: Optional[int] = None
 
     model_config = {
         "from_attributes": True, #meilleur gestion du json pour la libraire pydantic avec datetime
@@ -32,6 +39,7 @@ class TaskRead(BaseModel):
     priority: PriorityEnum
     status: StatusEnum
     active: bool
+    parentid: Optional[int] = None
 
     model_config = {
         "from_attributes": True,
@@ -42,13 +50,17 @@ class TaskRead(BaseModel):
 def root():
     return {"message": "BDD ok"}
 @app.post("/task", response_model=TaskRead)
-def create_task(task: TaskCreate, db: Session = Depends(get_db)):
+def create_task(
+    task: TaskCreate,
+    db: Session= Depends(get_db)
+):
     db_task = Task(
         name=task.name,
         description=task.description,
         priority=task.priority,
         status=task.status,
-        active=task.active
+        active=task.active,
+        parent_id=task.parentid
     )
     db.add(db_task)
     db.commit()
@@ -75,22 +87,26 @@ def get_tasks(
     status: Optional[StatusEnum] = None,
     active: Optional[bool] = None,
     name: Optional[str] = None,
+    parentid: Optional[int] = None,
     db: Session = Depends(get_db)
 
 ): #lister taches
     query = db.query(Task)
 
     if priority:
-        query = query.filter(priority == PriorityEnum)
+        query = query.filter(Task.priority == priority)
 
     if status:
-        query = query.filter(status == StatusEnum)
+        query = query.filter(Task.status == status)
 
     if active is not None:
-        query = query.filter(active == Task.active)
+        query = query.filter(Task.active == active)
     
     if name:
-        query = query.filter(name == Task.name)
+        query = query.filter(Task.name == name)
+
+    if parentid is not None:
+        query = query.filter(Task.parent_id == parentid)
     
     tasks = query.all()
 
