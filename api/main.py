@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, Depends
+from fastapi import FastAPI, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from database import Base, engine, get_db
@@ -6,6 +6,7 @@ from modelebdd import Task, PriorityEnum, StatusEnum
 from typing import Optional
 import datetime #pour les champs de date et heure
 import modelebdd
+from sqlalchemy.exc import IntegrityError
 
 
 app = FastAPI()
@@ -62,22 +63,36 @@ def create_task(
         active=task.active,
         parent_id=task.parentid
     )
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
+    try:
+        db.add(db_task)
+        db.commit()
+        db.refresh(db_task)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="DB Error")
+    if task.parentid:
+        parent_task = db.query(Task).filter(Task.id == task.parentid).first()
+        if not parent_task:
+            raise HTTPException(status_code=404, detail="Parent task not found")
     return db_task 
 @app.get("/task/{id}")
 def get_task(id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == id).first() #envoie requete a bdd pour lecture de la tache avec id correspondant
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
     print(task)
     return task
 @app.get("/tasks/{name}")
 def get_task_by_name(name: str, db: Session = Depends(get_db)): #same mais par nom
     task = db.query(Task).filter(Task.name == name).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
     return task
 @app.delete("/tasks/{id}")
 def delete_task(id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
     db.delete(task)
     db.commit()
     return task
@@ -114,7 +129,17 @@ def get_tasks(
 @app.put("/task/{id}")
 def update_task(id: int, task_update: TaskCreate, db: Session = Depends(get_db)): #changer la tache
     task = db.query(Task).filter(Task.id == id).first()
-    for key, value in task_update.dict().items():
+    if task_update.parentid:
+        parent_task = db.query(Task).filter(Task.id == task_update.parentid).first()
+        if not parent_task:
+            raise HTTPException(status_code=404, detail="Parent task not found")
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    for key, value in task_update().items():
         setattr(task, key, value)
-    db.commit()
-    return task
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Update Error (DB-issue)")
+
