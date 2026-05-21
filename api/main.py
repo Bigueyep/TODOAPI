@@ -9,7 +9,7 @@ import datetime #pour les champs de date et heure
 from sqlalchemy.exc import IntegrityError
 
 
-app = FastAPI()
+app = FastAPI(version="1.0", title="TODO API")
 
 Base.metadata.create_all(bind=engine)
 
@@ -47,9 +47,6 @@ class TaskRead(BaseModel):
         "arbitrary_types_allowed": True
     }
 
-@app.post("/task/")
-def root():
-    return {"message": "BDD ok"}
 @app.post("/task", response_model=TaskRead)
 def create_task(
     task: TaskCreate,
@@ -63,6 +60,10 @@ def create_task(
         active=task.active,
         parent_id=task.parentid
     )
+    if task.parentid:
+        parent_task = db.query(Task).filter(Task.id == task.parentid).first()
+        if not parent_task:
+            raise HTTPException(status_code=404, detail="Parent task not found")
     try:
         db.add(db_task)
         db.commit()
@@ -70,10 +71,7 @@ def create_task(
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="DB Error")
-    if task.parentid:
-        parent_task = db.query(Task).filter(Task.id == task.parentid).first()
-        if not parent_task:
-            raise HTTPException(status_code=404, detail="Parent task not found")
+    
     return db_task 
 @app.get("/task/{id}")
 def get_task(id: int, db: Session = Depends(get_db)):
@@ -82,13 +80,7 @@ def get_task(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     print(task)
     return task
-@app.get("/tasks/{name}")
-def get_task_by_name(name: str, db: Session = Depends(get_db)): #same mais par nom
-    task = db.query(Task).filter(Task.name == name).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
-@app.delete("/tasks/{id}")
+@app.delete("/task/{id}")
 def delete_task(id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == id).first()
     if not task:
