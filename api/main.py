@@ -118,21 +118,45 @@ def get_tasks(
 
     return tasks
 @app.put("/task/{id}")
-def update_task(id: int, task_update: TaskCreate, db: Session = Depends(get_db)): #changer la tache
-    
-    if task_update.parent_id:
-        parent_task = db.query(Task).filter(Task.id == task_update.parent_id).first()
-        if not parent_task:
-            raise HTTPException(status_code=404, detail="Parent task not found")
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def update_task(
+    id: int,
+    task_update: TaskCreate,
+    db: Session = Depends(get_db)
+):
+
     task = db.query(Task).filter(Task.id == id).first()
-    for key, value in task_update().items():
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    if task_update.parent_id:
+
+        parent_task = db.query(Task).filter(
+            Task.id == task_update.parent_id
+        ).first()
+
+        if not parent_task:
+            raise HTTPException(
+                status_code=404,
+                detail="Parent task not found"
+            )
+
+    for key, value in task_update.model_dump().items():
         setattr(task, key, value)
+
     try:
         db.commit()
+        db.refresh(task)
+
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Update Error (DB-issue)")
-    return task
 
+        raise HTTPException(
+            status_code=400,
+            detail="Update Error (DB-issue)"
+        )
+
+    return task
